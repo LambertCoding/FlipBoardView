@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="FlipBoardView">
+        <attr name="fbv_bitmap" format="reference" />
+        <attr name="fbv_angleY" format="integer" />
+    </declare-styleable>
+</resources>
