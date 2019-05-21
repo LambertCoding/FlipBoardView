@@ -7,7 +7,6 @@ import android.content.res.TypedArray;
 import android.graphics.*;
 import android.graphics.drawable.BitmapDrawable;
 import android.util.AttributeSet;
-import android.util.DisplayMetrics;
 import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,8 +27,9 @@ public class FlipBoardView extends View {
     // 最终执行完动画后，图片翻起的角度
     private int finalAngle;
 
-    private Paint paint;
-    private Bitmap bitmap;
+//    private Paint paint;
+//    private Bitmap bitmap;
+    private BitmapDrawable drawable;
     private Camera camera;
     private AnimatorSet animatorSet;
 
@@ -48,28 +48,27 @@ public class FlipBoardView extends View {
 
     private void init(Context context, @Nullable AttributeSet attrs) {
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.FlipBoardView);
-        BitmapDrawable drawable = (BitmapDrawable) a.getDrawable(R.styleable.FlipBoardView_fbv_bitmap);
+        drawable = (BitmapDrawable) a.getDrawable(R.styleable.FlipBoardView_fbv_bitmap);
         finalAngle = a.getInteger(R.styleable.FlipBoardView_fbv_angleY, 30);
         a.recycle();
 
-        if (drawable != null) {
-            bitmap = drawable.getBitmap();
-        } else {
-            bitmap = BitmapFactory.decodeResource(getResources(), R.mipmap.flip_board);
+        if (drawable == null) {
+            drawable = (BitmapDrawable) getResources().getDrawable(R.mipmap.flip_board);
         }
-        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        camera = new Camera();
 
-        DisplayMetrics displayMetrics = getResources().getDisplayMetrics();
-        float newZ = -displayMetrics.density * 8;
-        camera.setLocation(0, 0, newZ);
+//        bitmap = drawable.getBitmap();
+//
+//        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+        camera = new Camera();
+        camera.setLocation(0, 0, getResources().getDisplayMetrics().density * 8);
     }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        int bitmapWidth = bitmap.getWidth();
-        int bitmapHeight = bitmap.getHeight();
+        int bitmapWidth = drawable.getIntrinsicWidth();
+        int bitmapHeight = drawable.getIntrinsicHeight();
 
         int paddingStart = getPaddingStart();
         int paddingTop = getPaddingTop();
@@ -84,8 +83,8 @@ public class FlipBoardView extends View {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
-        int bitmapCenterX = bitmap.getWidth() >> 1;
-        int bitmapCenterY = bitmap.getHeight() >> 1;
+        int bitmapCenterX = drawable.getIntrinsicWidth() >> 1;
+        int bitmapCenterY = drawable.getIntrinsicHeight() >> 1;
         int centerX = getWidth() >> 1;
         int centerY = getHeight() >> 1;
 
@@ -110,7 +109,10 @@ public class FlipBoardView extends View {
         canvas.rotate(degreeZ);
         canvas.translate(-centerX, -centerY);
 
-        canvas.drawBitmap(bitmap, centerX - bitmapCenterX, centerY - bitmapCenterY, paint);
+        drawable.setBounds(centerX - bitmapCenterY, centerY - bitmapCenterY,
+                centerX + bitmapCenterX, centerY + bitmapCenterY);
+        drawable.draw(canvas);
+//        canvas.drawBitmap(bitmap, centerX - bitmapCenterX, centerY - bitmapCenterY, paint);
         canvas.restore();
 
 
@@ -130,7 +132,10 @@ public class FlipBoardView extends View {
         canvas.rotate(degreeZ);
         canvas.translate(-centerX, -centerY);
 
-        canvas.drawBitmap(bitmap, centerX - bitmapCenterY, centerY - bitmapCenterY, paint);
+        drawable.setBounds(centerX - bitmapCenterY, centerY - bitmapCenterY,
+                centerX + bitmapCenterX, centerY + bitmapCenterY);
+        drawable.draw(canvas);
+//        canvas.drawBitmap(bitmap, centerX - bitmapCenterY, centerY - bitmapCenterY, paint);
         canvas.restore();
     }
 
@@ -163,7 +168,7 @@ public class FlipBoardView extends View {
 
     public void start() {
         if (animatorSet == null) {
-            ValueAnimator startAnim = ValueAnimator.ofFloat(0, -finalAngle);
+            ValueAnimator startAnim = ValueAnimator.ofFloat(0, finalAngle);
             startAnim.setDuration(600);
             startAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -174,16 +179,16 @@ public class FlipBoardView extends View {
             startAnim.setStartDelay(200);
 
             ValueAnimator middleAnim = ValueAnimator.ofFloat(0, 270);
-            middleAnim.setDuration(1000);
+            middleAnim.setDuration(800);
             middleAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
                 public void onAnimationUpdate(ValueAnimator animation) {
                     setDegreeZ((Float) animation.getAnimatedValue());
                 }
             });
-            middleAnim.setStartDelay(300);
+            middleAnim.setStartDelay(200);
 
-            ValueAnimator endAnim = ValueAnimator.ofFloat(0, finalAngle);
+            ValueAnimator endAnim = ValueAnimator.ofFloat(0, -finalAngle);
             endAnim.setDuration(600);
             endAnim.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                 @Override
@@ -222,11 +227,6 @@ public class FlipBoardView extends View {
 
     public void setDegreeZ(float degreeZ) {
         this.degreeZ = degreeZ;
-        invalidate();
-    }
-
-    public void setBitmap(Bitmap bitmap) {
-        this.bitmap = bitmap;
         invalidate();
     }
 }
